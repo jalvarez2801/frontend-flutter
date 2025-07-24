@@ -55,7 +55,8 @@ class AuthExampleState extends State<AuthExample> {
   void initState() {
     super.initState();
     // Escucha los cambios en el estado de autenticación (login/logout)
-    _authSubscription = FirebaseAuth.instance.authStateChanges().listen((User? user) {
+    _authSubscription =
+        FirebaseAuth.instance.authStateChanges().listen((User? user) {
       setState(() {
         _user = user;
         // Si el usuario cierra sesión, reseteamos el mensaje de la API.
@@ -72,7 +73,6 @@ class AuthExampleState extends State<AuthExample> {
     _authSubscription.cancel();
     super.dispose();
   }
-
 
   Future<void> signInAnonymously() async {
     try {
@@ -103,7 +103,9 @@ class AuthExampleState extends State<AuthExample> {
       _apiMessage = "Obteniendo saludo...";
     });
 
-    final String url = Platform.isAndroid ? 'http://10.0.2.2:3000/saludo' : 'http://localhost:3000/saludo';
+    final String url = Platform.isAndroid
+        ? 'http://10.0.2.2:3000/saludo'
+        : 'http://localhost:3000/saludo';
     print("Intentando conectar a: $url");
 
     try {
@@ -114,11 +116,13 @@ class AuthExampleState extends State<AuthExample> {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         setState(() {
-          _apiMessage = data['mensaje'] ?? 'El JSON no tiene la clave "mensaje".';
+          _apiMessage =
+              data['mensaje'] ?? 'El JSON no tiene la clave "mensaje".';
         });
       } else {
         setState(() {
-          _apiMessage = 'Error del servidor: ${response.statusCode}\nCuerpo: ${response.body}';
+          _apiMessage =
+              'Error del servidor: ${response.statusCode}\nCuerpo: ${response.body}';
         });
       }
     } catch (e) {
@@ -142,12 +146,16 @@ class AuthExampleState extends State<AuthExample> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Text("Estado de Firebase:", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              const Text("Estado de Firebase:",
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
               const SizedBox(height: 8),
               // ✅ MEJORA: Muestra un estado claro basado en si _user es nulo o no
               isSignedIn
-                  ? Text("Conectado como: Anónimo\nUID: ${_user!.uid}", textAlign: TextAlign.center, style: TextStyle(color: Colors.green[700]))
-                  : const Text("No autenticado", style: TextStyle(color: Colors.red)),
+                  ? Text("Conectado como: Anónimo\nUID: ${_user!.uid}",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.green[700]))
+                  : const Text("No autenticado",
+                      style: TextStyle(color: Colors.red)),
               const SizedBox(height: 20),
               // ✅ MEJORA: Muestra un botón u otro dependiendo del estado de autenticación
               if (isSignedIn)
@@ -162,14 +170,16 @@ class AuthExampleState extends State<AuthExample> {
                   child: const Text("Login anónimo"),
                 ),
               const Divider(height: 40, thickness: 1),
-              const Text("Respuesta de la API:", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              const Text("Respuesta de la API:",
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
               const SizedBox(height: 8),
               Text(_apiMessage, textAlign: TextAlign.center),
               const SizedBox(height: 20),
               // ✅ MEJORA CLAVE: El botón se deshabilita si `isSignedIn` es falso.
               // La propiedad `onPressed` se pone a null para deshabilitarlo.
               ElevatedButton(
-                onPressed: isSignedIn ? _fetchGreeting : null, // <-- AQUÍ LA MAGIA
+                onPressed:
+                    isSignedIn ? _fetchGreeting : null, // <-- AQUÍ LA MAGIA
                 child: const Text("Obtener Saludo"),
               ),
             ],
