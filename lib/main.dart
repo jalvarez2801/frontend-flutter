@@ -6,7 +6,6 @@ import 'dart:convert';
 import 'dart:io'; // Importante para detectar la plataforma
 import 'dart:async';
 
-
 void main() async {
   // Asegura que los bindings de Flutter estén inicializados
   WidgetsFlutterBinding.ensureInitialized();
