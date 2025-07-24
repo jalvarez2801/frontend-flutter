@@ -6,6 +6,7 @@ import 'dart:convert';
 import 'dart:io'; // Importante para detectar la plataforma
 import 'dart:async';
 
+
 void main() async {
   // Asegura que los bindings de Flutter estén inicializados
   WidgetsFlutterBinding.ensureInitialized();
@@ -44,32 +45,28 @@ class AuthExample extends StatefulWidget {
 }
 
 class AuthExampleState extends State<AuthExample> {
-  // ✅ MEJORA: Usar el objeto User? para un estado de autenticación más robusto
   User? _user;
   String _apiMessage = "Inicia sesión para obtener el saludo";
-
-  // ✅ MEJORA: Un listener para reaccionar a los cambios de autenticación
   late StreamSubscription<User?> _authSubscription;
 
   @override
   void initState() {
     super.initState();
-    // Escucha los cambios en el estado de autenticación (login/logout)
     _authSubscription =
         FirebaseAuth.instance.authStateChanges().listen((User? user) {
-      setState(() {
-        _user = user;
-        // Si el usuario cierra sesión, reseteamos el mensaje de la API.
-        if (_user == null) {
-          _apiMessage = "Inicia sesión para obtener el saludo";
-        }
-      });
+      if (mounted) {
+        setState(() {
+          _user = user;
+          if (_user == null) {
+            _apiMessage = "Inicia sesión para obtener el saludo";
+          }
+        });
+      }
     });
   }
 
   @override
   void dispose() {
-    // Es crucial cancelar la suscripción para evitar fugas de memoria
     _authSubscription.cancel();
     super.dispose();
   }
@@ -77,41 +74,57 @@ class AuthExampleState extends State<AuthExample> {
   Future<void> signInAnonymously() async {
     try {
       await FirebaseAuth.instance.signInAnonymously();
-      // El listener de authStateChanges se encargará de actualizar la UI
     } catch (e) {
+      // FIX (use_build_context_synchronously):
+      // Se verifica si el widget todavía está "montado" (visible en el árbol de widgets)
+      // antes de intentar usar su BuildContext. Esto evita errores si el usuario
+      // navega a otra pantalla mientras la operación asíncrona se completaba.
+      if (!mounted) return;
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Error al iniciar sesión: $e")),
       );
     }
   }
 
-  // ✅ MEJORA: Función para cerrar sesión
   Future<void> signOut() async {
     await FirebaseAuth.instance.signOut();
   }
 
   Future<void> _fetchGreeting() async {
-    // Doble verificación: aunque el botón está deshabilitado, es una buena práctica verificar.
     if (_user == null) {
-      setState(() {
-        _apiMessage = "Error: Debes estar autenticado para hacer esto.";
-      });
+      if (mounted) {
+        setState(() {
+          _apiMessage = "Error: Debes estar autenticado para hacer esto.";
+        });
+      }
       return;
     }
 
-    setState(() {
-      _apiMessage = "Obteniendo saludo...";
-    });
+    if (mounted) {
+      setState(() {
+        _apiMessage = "Obteniendo saludo...";
+      });
+    }
 
     final String url = Platform.isAndroid
         ? 'http://10.0.2.2:3000/saludo'
         : 'http://localhost:3000/saludo';
-    print("Intentando conectar a: $url");
+
+    // FIX (avoid_print):
+    // Se reemplaza `print` por `debugPrint`. `debugPrint` es la alternativa recomendada
+    // para logs de depuración, ya que se elimina automáticamente en las compilaciones
+    // de producción (release) y evita la sobrecarga de logs en la consola.
+    debugPrint("Intentando conectar a: $url");
 
     try {
       final response = await http.get(Uri.parse(url));
 
-      print("Respuesta recibida. Código de estado: ${response.statusCode}");
+      debugPrint(
+          "Respuesta recibida. Código de estado: ${response.statusCode}");
+
+      // Se verifica si el widget está montado antes de actualizar el estado.
+      if (!mounted) return;
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -126,16 +139,19 @@ class AuthExampleState extends State<AuthExample> {
         });
       }
     } catch (e) {
-      print("Ha ocurrido un error de conexión: $e");
+      debugPrint("Ha ocurrido un error de conexión: $e");
+
+      // Se verifica si el widget está montado antes de actualizar el estado.
+      if (!mounted) return;
+
       setState(() {
-        _apiMessage = 'Error de conexión. Revisa la consola de Flutter.';
+        _apiMessage = 'Error de conexión. Revisa la consola para más detalles.';
       });
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    // Determina si el usuario está autenticado
     final bool isSignedIn = _user != null;
 
     return Scaffold(
@@ -149,7 +165,6 @@ class AuthExampleState extends State<AuthExample> {
               const Text("Estado de Firebase:",
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
               const SizedBox(height: 8),
-              // ✅ MEJORA: Muestra un estado claro basado en si _user es nulo o no
               isSignedIn
                   ? Text("Conectado como: Anónimo\nUID: ${_user!.uid}",
                       textAlign: TextAlign.center,
@@ -157,7 +172,6 @@ class AuthExampleState extends State<AuthExample> {
                   : const Text("No autenticado",
                       style: TextStyle(color: Colors.red)),
               const SizedBox(height: 20),
-              // ✅ MEJORA: Muestra un botón u otro dependiendo del estado de autenticación
               if (isSignedIn)
                 ElevatedButton(
                   onPressed: signOut,
@@ -175,11 +189,8 @@ class AuthExampleState extends State<AuthExample> {
               const SizedBox(height: 8),
               Text(_apiMessage, textAlign: TextAlign.center),
               const SizedBox(height: 20),
-              // ✅ MEJORA CLAVE: El botón se deshabilita si `isSignedIn` es falso.
-              // La propiedad `onPressed` se pone a null para deshabilitarlo.
               ElevatedButton(
-                onPressed:
-                    isSignedIn ? _fetchGreeting : null, // <-- AQUÍ LA MAGIA
+                onPressed: isSignedIn ? _fetchGreeting : null,
                 child: const Text("Obtener Saludo"),
               ),
             ],
